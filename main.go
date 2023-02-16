@@ -1,12 +1,22 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"html/template"
+	"log"
 	"net/http"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 func main() {
+	// Create context that listens for the interrupt signal from the OS.
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
 	engine := gin.Default()
 	//Default 使用 Logger 和 Recovery 中间件
 	//engine := gin.Default()
@@ -63,9 +73,63 @@ func main() {
 	engine.POST("/uploadOne", uploadOne)
 	//多文件上传
 	engine.POST("/uploadMore", uploadMore)
-	
+
 	//读取Reader数据
 	engine.GET("/Reader", Reader)
 
-	engine.Run(":8080")
+	authorized := engine.Group("/admin", gin.BasicAuth(gin.Accounts{
+		"foo":    "bar",
+		"austin": "1234",
+		"lena":   "hello2",
+		"manu":   "4321",
+	}))
+	//Auth
+	authorized.GET("/Auth", Auth)
+	//engine.Use(gin.Logger())
+	// 你可以为每个路由添加任意数量的中间件。
+	engine.GET("/benchmark", MyBenchLogger(), benchEndpoint)
+	//// urlBind?name=22&address=2
+	engine.GET("/urlBind", urlBind)
+
+	engine.GET("/longAsync", longAsync)
+	engine.GET("/longSync", longSync)
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: engine,
+	}
+
+	go func() {
+		// 服务连接
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
+		}
+	}()
+
+	// Listen for the interrupt signal.
+	<-ctx.Done()
+
+	// Restore default behavior on the interrupt signal and notify user of shutdown.
+	stop()
+	log.Println("shutting down gracefully, press Ctrl+C again to force")
+
+	// The context is used to inform the server it has 5 seconds to finish
+	// the request it is currently handling
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server forced to shutdown: ", err)
+	}
+
+	log.Println("Server exiting")
+}
+
+func benchEndpoint(c *gin.Context) {
+	fmt.Println("benchEndpoint")
+}
+
+// MyBenchLogger 自定义中间件
+func MyBenchLogger() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		fmt.Println("自定义中间件")
+	}
 }
