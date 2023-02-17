@@ -1,8 +1,8 @@
 package main
 
 import (
+	"Gin-self/middleware"
 	"context"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"html/template"
 	"log"
@@ -87,7 +87,7 @@ func main() {
 	authorized.GET("/Auth", Auth)
 	//engine.Use(gin.Logger())
 	// 你可以为每个路由添加任意数量的中间件。
-	engine.GET("/benchmark", MyBenchLogger(), benchEndpoint)
+	engine.GET("/benchmark", middleware.MyBenchLogger(), benchEndpoint)
 	//// urlBind?name=22&address=2
 	engine.GET("/urlBind", urlBind)
 
@@ -121,15 +121,4 @@ func main() {
 	}
 
 	log.Println("Server exiting")
-}
-
-func benchEndpoint(c *gin.Context) {
-	fmt.Println("benchEndpoint")
-}
-
-// MyBenchLogger 自定义中间件
-func MyBenchLogger() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		fmt.Println("自定义中间件")
-	}
 }

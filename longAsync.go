@@ -9,6 +9,7 @@ import (
 func longAsync(ctx *gin.Context) {
 	// 创建在 goroutine 中使用的副本
 	cCp := ctx.Copy()
+	time.Sleep(5 * time.Second)
 	go func() {
 		// 用 time.Sleep() 模拟一个长任务。
 		time.Sleep(5 * time.Second)
