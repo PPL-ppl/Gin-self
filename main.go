@@ -3,10 +3,13 @@ package main
 import (
 	"Gin-self/middleware"
 	"context"
+	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -18,6 +21,19 @@ func main() {
 	defer stop()
 
 	engine := gin.Default()
+	//记录到文件
+	create, _ := os.Create("gin.log")
+	gin.DefaultWriter = io.MultiWriter(create)
+	// 如果需要同时将日志写入文件和控制台，请使用以下代码。
+	//gin.DefaultWriter = io.MultiWriter(create, os.Stdout)
+
+	gin.DebugPrintRouteFunc = func(httpMethod, absolutePath, handlerName string, nuHandlers int) {
+		log.Printf("endpoint %v %v %v %v\n", httpMethod, absolutePath, handlerName, nuHandlers)
+	}
+
+	// 禁用控制台颜色，将日志写入文件时不需要控制台颜色。
+	gin.DisableConsoleColor()
+
 	//Default 使用 Logger 和 Recovery 中间件
 	//engine := gin.Default()
 	//不使用
@@ -93,16 +109,28 @@ func main() {
 
 	engine.GET("/longAsync", longAsync)
 	engine.GET("/longSync", longSync)
+
+	//匹配多个不同body
+	engine.POST("/SomeHandler", SomeHandler)
+	engine.POST("/SomeHandler1", SomeHandler1)
+
+	//绑定map
+	engine.POST("/mapBind", mapBind)
+	engine.GET("/queryBind", queryBind)
+
 	srv := &http.Server{
 		Addr:    ":8080",
 		Handler: engine,
 	}
-
 	go func() {
 		// 服务连接
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
 		}
+		if err := autotls.Run(engine, "example1.com", "example2.com"); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
+		}
+		//log.Fatal()
 	}()
 
 	// Listen for the interrupt signal.
