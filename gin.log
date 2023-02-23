@@ -1,6 +1,6 @@
 [GIN-debug] Loaded HTML Templates (4): 
-	- index.tmpl
-	- post/index.tmpl
 	- user/index.tmpl
 	- 
+	- index.tmpl
+	- post/index.tmpl
 

@@ -117,7 +117,10 @@ func main() {
 	//绑定map
 	engine.POST("/mapBind", mapBind)
 	engine.GET("/queryBind", queryBind)
-
+	group := engine.Group("/gorm")
+	group.GET("/C", C)
+	group.GET("/U", U)
+	group.GET("/D", D)
 	srv := &http.Server{
 		Addr:    ":8080",
 		Handler: engine,
